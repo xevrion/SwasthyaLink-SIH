@@ -42,3 +42,4 @@ yarn-error.*
 
 ../backend/.env*
 backend/.env
+MVP/backend/.env
