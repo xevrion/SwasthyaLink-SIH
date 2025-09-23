@@ -40,5 +40,5 @@ yarn-error.*
 /ios
 /android
 
-MVP/backend/.env
+/MVP/backend/.env
 .env
