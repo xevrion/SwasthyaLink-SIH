@@ -8,7 +8,9 @@ const getBaseURL = () => {
   }
   if (Platform.OS === 'android') {
     // Use 10.0.2.2 for Android emulator, localhost for physical device
-    return  'http://localhost:3000';
+    const BASE_URL = Platform.OS === 'android'
+      ? 'http://10.0.2.2:3000'
+      : 'http://localhost:3000';
   }
   if (Platform.OS === 'ios') {
     return 'http://localhost:3000';
@@ -17,6 +19,7 @@ const getBaseURL = () => {
 };
 
 const BASE_URL = getBaseURL();
+// const BASE_URL = 'http://10.22.16.33:3000'
 const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 class ApiService {
@@ -30,17 +33,21 @@ class ApiService {
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch(`${this.baseURL}/health`, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      clearTimeout(timeoutId);
-      
+
+      let response;
+      try {
+        response = await fetch(`${this.baseURL}/health`, {
+          method: 'GET',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('Connection test response status:', response.status);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
       if (response.ok) {
         this.isOnline = true;
         return { success: true, status: 'Server is reachable' };
@@ -50,8 +57,8 @@ class ApiService {
     } catch (error) {
       console.error('Connection test failed:', error);
       this.isOnline = false;
-      return { 
-        success: false, 
+      return {
+        success: false,
         status: 'Cannot reach server',
         details: error.message
       };
@@ -87,7 +94,7 @@ class ApiService {
   async makeRequest(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     console.log(`Making request to: ${url}`);
-    
+
     // Test connection first for critical requests
     if (!this.isOnline && (endpoint === '/login' || endpoint === '/patients')) {
       const connectionTest = await this.testConnection();
@@ -95,9 +102,9 @@ class ApiService {
         throw new Error(`Network Error: ${connectionTest.status}. Please check if the backend server is running on ${this.baseURL}`);
       }
     }
-    
+
     const token = await this.getToken();
-    
+
     const defaultHeaders = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -129,15 +136,15 @@ class ApiService {
         headers: config.headers,
         body: config.body ? 'Present' : 'None'
       });
-      
+
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
-      
+
       console.log('Response status:', response.status);
-      
+
       let data;
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
       } else {
@@ -145,9 +152,9 @@ class ApiService {
         console.warn('Non-JSON response:', textResponse);
         data = { error: 'Server returned non-JSON response' };
       }
-      
+
       console.log('Response data:', data);
-      
+
       if (!response.ok) {
         // Handle specific HTTP status codes
         if (response.status === 401) {
@@ -163,30 +170,30 @@ class ApiService {
           throw new Error(data.error || `Request failed with status ${response.status}`);
         }
       }
-      
+
       this.isOnline = true;
       return data;
-      
+
     } catch (error) {
       clearTimeout(timeoutId);
-      
+
       console.error('Request failed:', error);
-      
+
       // Handle different types of errors
       if (error.name === 'AbortError') {
         throw new Error('Request timeout. Please check your internet connection.');
       }
-      
-      if (error.message.includes('Network request failed') || 
-          error.message.includes('fetch')) {
+
+      if (error.message.includes('Network request failed') ||
+        error.message.includes('fetch')) {
         this.isOnline = false;
         throw new Error(`Network Error: Cannot connect to server at ${this.baseURL}. Please ensure the backend is running.`);
       }
-      
+
       if (error.message.includes('JSON')) {
         throw new Error('Server response error. Please try again.');
       }
-      
+
       // Re-throw known errors
       throw error;
     }
@@ -195,27 +202,27 @@ class ApiService {
   async login(username, password) {
     try {
       console.log('Attempting login...');
-      
+
       // Input validation
       if (!username?.trim() || !password?.trim()) {
         throw new Error('Username and password are required');
       }
-      
+
       const data = await this.makeRequest('/login', {
         method: 'POST',
-        body: JSON.stringify({ 
-          username: username.trim(), 
-          password: password.trim() 
+        body: JSON.stringify({
+          username: username.trim(),
+          password: password.trim()
         }),
       });
-      
+
       if (data.success && data.token) {
         await this.setToken(data.token);
         console.log('Login successful, token stored');
       } else {
         throw new Error(data.error || 'Login failed');
       }
-      
+
       return data;
     } catch (error) {
       console.error('Login error:', error);
@@ -226,10 +233,10 @@ class ApiService {
   async addPatient(patientData) {
     try {
       console.log('Adding patient:', patientData);
-      
+
       // Input validation
       const { name, age, gender, village, healthIssue } = patientData;
-      
+
       if (!name?.trim()) {
         throw new Error('Patient name is required');
       }
@@ -245,12 +252,12 @@ class ApiService {
       if (!healthIssue?.trim()) {
         throw new Error('Health issue description is required');
       }
-      
+
       const data = await this.makeRequest('/patients', {
         method: 'POST',
         body: JSON.stringify(patientData),
       });
-      
+
       console.log('Patient added successfully');
       return data;
     } catch (error) {
