@@ -18,8 +18,8 @@ const getBaseURL = () => {
   return 'http://localhost:3000';
 };
 
-// const BASE_URL = getBaseURL();
-const BASE_URL = 'http://10.22.16.33:3000'
+const BASE_URL = getBaseURL();
+// const BASE_URL = 'http://10.22.16.33:3000'
 const REQUEST_TIMEOUT = 10000; // 10 seconds
 
 class ApiService {
