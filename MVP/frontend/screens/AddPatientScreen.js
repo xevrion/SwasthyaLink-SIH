@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import ApiService from '../services/api';
+import NotificationService from '../services/notificationService';
 
 const AddPatientScreen = ({ navigation }) => {
   const [patientData, setPatientData] = useState({
@@ -66,6 +67,15 @@ const AddPatientScreen = ({ navigation }) => {
       const response = await ApiService.addPatient(patientData);
       
       if (response.success) {
+        // Send automatic notification for successful patient addition
+        try {
+          await NotificationService.notifyPatientAdded(patientData.name, patientData.village);
+          console.log('✅ Automatic notification sent for new patient');
+        } catch (notificationError) {
+          console.warn('⚠️ Failed to send automatic notification:', notificationError);
+          // Don't block the success flow if notification fails
+        }
+        
         Alert.alert(
           'Success', 
           'Patient added successfully!',

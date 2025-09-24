@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
@@ -6,10 +6,30 @@ import { StatusBar } from 'expo-status-bar';
 import LoginScreen from './screens/LoginScreen';
 import PatientListScreen from './screens/PatientListScreen';
 import AddPatientScreen from './screens/AddPatientScreen';
+import NotificationService from './services/notificationService';
 
 const Stack = createStackNavigator();
 
 export default function App() {
+  // Initialize notifications when app starts
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        await NotificationService.initialize();
+        console.log('✅ App: Notifications initialized');
+      } catch (error) {
+        console.warn('⚠️ App: Failed to initialize notifications:', error);
+      }
+    };
+    
+    initializeNotifications();
+    
+    // Cleanup on unmount
+    return () => {
+      NotificationService.cleanup();
+    };
+  }, []);
+
   return (
     <NavigationContainer>
       <StatusBar style="auto" />

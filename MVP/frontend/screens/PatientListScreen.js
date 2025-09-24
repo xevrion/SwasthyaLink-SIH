@@ -8,13 +8,18 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import ApiService from '../services/api';
+import NotificationService from '../services/notificationService';
 
 const PatientListScreen = ({ navigation }) => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showNotificationMenu, setShowNotificationMenu] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState(false);
 
   const fetchPatients = async (showLoading = true) => {
     if (showLoading) {
@@ -57,6 +62,75 @@ const PatientListScreen = ({ navigation }) => {
         },
       ]
     );
+  };
+
+  // Notification testing functions
+  const sendTestNotification = async (type) => {
+    try {
+      setSendingNotification(true);
+      await NotificationService.sendTestNotification(type);
+      
+      Alert.alert(
+        '📱 Notification Sent!', 
+        `Test notification "${type}" has been sent. Check your notification panel!`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Failed to send test notification:', error);
+      Alert.alert(
+        'Error',
+        `Failed to send notification: ${error.message}`,
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
+  const sendDelayedNotification = async () => {
+    try {
+      setSendingNotification(true);
+      await NotificationService.scheduleDelayedNotification(
+        '⏰ Delayed Test Notification',
+        'This notification was scheduled 5 seconds ago!',
+        5,
+        { type: 'delayed_test' }
+      );
+      
+      Alert.alert(
+        '⏰ Scheduled!', 
+        'A test notification will arrive in 5 seconds!',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
+  const sendPatientNotification = async () => {
+    if (patients.length === 0) {
+      Alert.alert('No Patients', 'Add some patients first to test patient notifications!');
+      return;
+    }
+
+    const randomPatient = patients[Math.floor(Math.random() * patients.length)];
+    
+    try {
+      setSendingNotification(true);
+      await NotificationService.notifyPatientAdded(randomPatient.name, randomPatient.village);
+      
+      Alert.alert(
+        '✅ Patient Notification Sent!',
+        `Sent notification for patient: ${randomPatient.name}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      Alert.alert('Error', error.message);
+    } finally {
+      setSendingNotification(false);
+    }
   };
 
   useEffect(() => {
@@ -143,12 +217,150 @@ const PatientListScreen = ({ navigation }) => {
         }
       />
 
+      {/* Add Patient FAB */}
       <TouchableOpacity
         style={styles.fabButton}
         onPress={() => navigation.navigate('AddPatient')}
       >
         <Text style={styles.fabText}>+</Text>
       </TouchableOpacity>
+      
+      {/* Notification Test FAB */}
+      <TouchableOpacity
+        style={[styles.fabButton, styles.notificationFab]}
+        onPress={() => setShowNotificationMenu(true)}
+      >
+        <Text style={styles.fabText}>🔔</Text>
+      </TouchableOpacity>
+
+      {/* Notification Test Modal */}
+      <Modal
+        visible={showNotificationMenu}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNotificationMenu(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>📱 Test Notifications</Text>
+              <TouchableOpacity 
+                onPress={() => setShowNotificationMenu(false)}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              <Text style={styles.sectionTitle}>Basic Notifications</Text>
+              
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendTestNotification('basic')}
+                disabled={sendingNotification}
+              >
+                <Text style={styles.testButtonIcon}>🧪</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>Basic Test</Text>
+                  <Text style={styles.testButtonDesc}>Simple notification test</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendDelayedNotification()}
+                disabled={sendingNotification}
+              >
+                <Text style={styles.testButtonIcon}>⏰</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>Delayed Test</Text>
+                  <Text style={styles.testButtonDesc}>Notification in 5 seconds</Text>
+                </View>
+              </TouchableOpacity>
+
+              <Text style={styles.sectionTitle}>Patient Notifications</Text>
+              
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendTestNotification('patient_added')}
+                disabled={sendingNotification}
+              >
+                <Text style={styles.testButtonIcon}>✅</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>Patient Added</Text>
+                  <Text style={styles.testButtonDesc}>New patient registration alert</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendPatientNotification()}
+                disabled={sendingNotification || patients.length === 0}
+              >
+                <Text style={styles.testButtonIcon}>👤</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>Random Patient Alert</Text>
+                  <Text style={styles.testButtonDesc}>
+                    {patients.length === 0 ? 'Add patients first' : 'Notification for random patient'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendTestNotification('patient_reminder')}
+                disabled={sendingNotification}
+              >
+                <Text style={styles.testButtonIcon}>⏰</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>Follow-up Reminder</Text>
+                  <Text style={styles.testButtonDesc}>High priority patient reminder</Text>
+                </View>
+              </TouchableOpacity>
+
+              <Text style={styles.sectionTitle}>System Notifications</Text>
+              
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendTestNotification('health_check')}
+                disabled={sendingNotification}
+              >
+                <Text style={styles.testButtonIcon}>🏥</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>Health Check</Text>
+                  <Text style={styles.testButtonDesc}>Weekly health rounds reminder</Text>
+                </View>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.testButton}
+                onPress={() => sendTestNotification('system_status')}
+                disabled={sendingNotification}
+              >
+                <Text style={styles.testButtonIcon}>📊</Text>
+                <View style={styles.testButtonContent}>
+                  <Text style={styles.testButtonTitle}>System Update</Text>
+                  <Text style={styles.testButtonDesc}>Data sync status notification</Text>
+                </View>
+              </TouchableOpacity>
+
+              {sendingNotification && (
+                <View style={styles.loadingSection}>
+                  <ActivityIndicator size="small" color="#007AFF" />
+                  <Text style={styles.loadingText}>Sending notification...</Text>
+                </View>
+              )}
+              
+              <View style={styles.modalFooter}>
+                <Text style={styles.footerText}>
+                  📱 Make sure your device notifications are enabled!
+                </Text>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -289,6 +501,119 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
+  },
+  // Notification FAB styles
+  notificationFab: {
+    bottom: 100, // Position above the add button
+    backgroundColor: '#FF6B35', // Orange color for notification button
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    minHeight: '60%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 15,
+    marginBottom: 10,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  testButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 15,
+    marginBottom: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  testButtonIcon: {
+    fontSize: 24,
+    marginRight: 15,
+    width: 30,
+    textAlign: 'center',
+  },
+  testButtonContent: {
+    flex: 1,
+  },
+  testButtonTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  testButtonDesc: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  loadingSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    marginTop: 10,
+  },
+  modalFooter: {
+    marginTop: 20,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 
