@@ -108,9 +108,10 @@ npm start
 - Pull-to-refresh on patient list
 - Automatic token storage/retrieval
 
-## Production Considerations
+<!-- ## Production Considerations
 
-This is an MVP. For production:
+This is an MVP,
+For production:
 
 - Add proper user management
 - Implement password hashing
@@ -118,4 +119,4 @@ This is an MVP. For production:
 - Include error logging
 - Set up proper environment configs
 - Add tests
-- Implement proper security headers
+- Implement proper security headers -->
