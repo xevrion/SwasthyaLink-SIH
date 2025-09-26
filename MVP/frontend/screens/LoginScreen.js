@@ -65,11 +65,12 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.title}>Welcome to SwasthyaLink</Text>
       <Text style={styles.title}>ASHA Worker Login</Text>
       
       <View style={styles.form}>
         {/* Server Status Display */}
-        <View style={styles.serverStatus}>
+        {/* <View style={styles.serverStatus}>
           <View style={styles.statusRow}>
             <View style={[
               styles.statusDot, 
@@ -100,7 +101,7 @@ const LoginScreen = ({ navigation }) => {
           )}
           
           <Text style={styles.serverUrl}>Server: {ApiService.getBaseURL()}</Text>
-        </View>
+        </View> */}
 
         <TextInput
           style={styles.input}

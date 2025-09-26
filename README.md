@@ -70,7 +70,7 @@ npm start
 ## API Endpoints
 
 - `POST /login` - Authenticate user
-- `POST /patients` - Add new patient (requires auth)
+- `POST /patients` - Add new patient (requires auth) 
 - `GET /patients` - Get all patients (requires auth)
 - `GET /health` - Health check
 
